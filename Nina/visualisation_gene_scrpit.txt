@@ -1,0 +1,73 @@
+#### Visualisation of region around a gene of interest
+
+### We need genome files (fasta files) and annotation giles (gff3)
+### Some genomes are annotated with .gbk (genbank) file, so we first need to convert them to the right format
+### A small tool for that is bp_genbank2gff3
+### usage, in Unix (terminal):
+
+    bp_genbank2gff3 A118.gb
+    
+> Input: A118.gb
+# working on region:CP059039, Acinetobacter baumannii, Acinetobacter baumannii strain A118 chromosome, complete genome., 14-JUL-2020
+# GFF3 saved to ./A118.gb.gff
+
+### We do this for all the genomes, and then we cat them, as well as the genomes
+
+    cat *.gb.gff > all_genomes.gff
+    cat *.fasta > all_genomes.fasta
+
+###Then, we only want to keep the CDS region in the annotation file, so we have to filter. We use gffreader
+
+    gffreader all_genomes.gff | grep 'CDS' > all_genomes.cds.gff
+
+
+### We now have the input for R
+
+###In R ###
+
+We will use the package called gggenomes --> https://thackl.github.io/gggenomes/index.html
+##Install and load the libraries
+
+     install ggtree
+     https://bioconductor.org/packages/release/bioc/html/ggtree.html
+    if (!requireNamespace("BiocManager", quietly = TRUE))
+      install.packages("BiocManager")
+    BiocManager::install("ggtree")
+
+    install.packages("devtools")
+    devtools::install_github("thackl/thacklr")
+    devtools::install_github("thackl/gggenomes")
+
+    if (!require("BiocManager", quietly = TRUE))
+      install.packages("BiocManager")
+
+    BiocManager::install("rtracklayer")
+    library(gggenomes)
+    library(rtracklayer)
+    
+    ###Load the input files. We need two files, the genomes and the gff
+    
+    seqs<-read_seqs('3genomes.fasta',.id='file_id')
+    genes <- read_gff("all_genomes.cds.gff")
+    
+    
+####we are also creating an object for the focus on the region of interest, according to each genome. Here, the example is for three genomes 
+
+    loci <- tribble(
+        ~seq_id, ~start, ~end,
+        "A118", 2317290,2326620, # probably more realistic would be genomeA_contig1 or so
+        "ATCC17978", 1455760, 1461595,
+        "ATCC19606", 2337240,2355075)
+
+
+###Now we are ready to plot the first plot
+
+p2 <- gggenomes(seq=seqs, genes)+
+  geom_seq() + geom_bin_label()  +
+  geom_gene() +
+  scale_fill_distiller(palette="Spectral") 
+
+pdf("output.pdf", height=5, width=15)
+p2|>focus(.loci=loci)
+dev.off()
+

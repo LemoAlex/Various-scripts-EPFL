@@ -1,0 +1,170 @@
+
+#### FINAL script for RNASeq.####
+
+#The goal here is to analye the RNA dataseq with the method used in Culviner et al (2018). We want to check whether there is some putative cleavage when a nuclease is present #compared to when absent. 
+
+#We have 3 'samples', with each having 3 replicates
+
+#10107: with nuclease
+#10207: without nuclease
+#8503: control
+
+#at T0, everything should be equal. at T15, the cell is 'dying' so if there is cleavage, we should be able to detect it at this time point.
+
+
+
+
+## The script uses T15 - rep 3 as an example
+
+
+
+##Start with mapping the reads
+
+## no need to add the "best" parameter, as bowtie2 default behaviour is :   (default) look for multiple alignments, report best, with MAPQ
+
+> bowtie2 -U 10107-T15-rep3_R1.fastq,10107-T15-rep3_R2.fastq -x A1552 -S 10107_T15_rep3.sam -D 20 -R 3 -N 0 -L 20 -i S,1,0.50 -p 6 -I 40 -X 300
+
+> for file in *.sam; do samtools view -bS $file > ${file/.sam/.bam}; done
+> for i in *.bam ; do samtools sort $i -o sorted_$i ; done
+
+##use bedtools coverage to get the coverage for the CDS, for each nucleotide
+###a1552_genes.bed is the bed file extracted from the annotation to contain only the CDS regions
+
+> bedtools coverage -a a1552_genes.bed -b sorted_10107_T15_rep3.bam -d > bedtools.coverage.10107.T15
+> bedtools coverage -a a1552_genes.bed -b sorted_10207_T15_rep3.bam -d > bedtools.coverage.10207.T15
+
+
+##some data conversion to get the right format, and the gene as a factor in column 1
+> awk 'NR==FNR{a[$3]=$2;next}($2 in a){$1=a[$2]}1'  a1552_genenames bedtools.coverage.10107.T15 > final.10107.file
+> sed 's/ /\t/g' final.10107.file >final.file.10107.tab
+> cut -f 1,4,5 final.file.10107.tab > 10107.final         
+
+> awk 'NR==FNR{a[$3]=$2;next}($2 in a){$1=a[$2]}1'  a1552_genenames bedtools.coverage.10207.T15 > final.10207.file
+> sed 's/ /\t/g' final.10207.file >final.10207.file.tab
+> cut -f 1,4,5 final.10207.file.tab > 10207.final      
+
+> paste 10107.final 10207.final | cut -f 1,3,6 > final.both
+
+
+##manually add headers
+Gene  X10107  X10207
+
+
+## 1st column is gene, and then 2nd and 3rd correspond to the counts for each sample at each nucleotide.
+
+> head final.both
+
+
+Gene	X10107	X10207
+gene1	4185	1869
+gene1	4195	1870
+gene1	4206	1881
+gene1	4207	1885
+gene1	4206	1884
+gene1	4212	1884
+gene1	4203	1884
+gene1	4199	1882
+
+
+
+
+
+### SWITCH INTO R ####
+
+
+
+
+##Import the data. 
+table<-read.table("final.both.T15.rep3",header=T)
+
+##Filter the data to keep only position with a minimum coverage of 64 in both samples/treatment
+
+
+table_filtered<-which((table$X10107>=64 & table$X10207>=64))
+table_good<-table[table_filtered,]
+
+
+##Sum the total counts of each position contained in each gene
+
+sum_10107<-aggregate(x = table_good$X10107,               
+          by = list(table_good$Gene),              
+          FUN = sum) 
+
+sum_10207<-aggregate(x = table_good$X10207,                
+                     by = list(table_good$Gene),             
+                     FUN = sum) 
+
+sum_both<-  cbind(sum_10107,sum_10207$x)
+
+
+## Calculate the geometric meane for each position, in order to yield the "reference sample"
+
+library(compositions)
+
+geom<-geometricmeanRow(sum_both[,2:3])
+
+##add the ref sample to the sum table and the general table
+
+final_gene<-cbind(sum_both,geom)
+
+table_good$match<-final_gene$geom[match(table_good$Gene,final_gene$Group.1)]
+
+##"normalise" each position according to the reference sample (geom mean)
+normalised_10107<-table_good$X10107/table_good$match
+normalised_10207<-table_good$X10207/table_good$match
+table_normalised<-cbind(table_good,normalised_10107,normalised_10207)
+head(table_normalised)
+
+
+##calculate the median of the normalized values for each gene
+
+median_10107<-aggregate(x = table_normalised$normalised_10107,                # Specify data column
+                        by = list(table_good$Gene),              # Specify group indicator
+                        FUN = median) 
+
+median_10207<-aggregate(x = table_normalised$normalised_10207,                # Specify data column
+                        by = list(table_good$Gene),              # Specify group indicator
+                        FUN = median) 
+median_both<-(cbind(median_10107,median_10207$x))
+
+
+##add the gene median value to each position
+
+table_normalised$median_10107<-median_10107$x[match(table_normalised$Gene,median_10107$Group.1)]
+table_normalised$median_10207<-median_10207$x[match(table_normalised$Gene,median_10207$Group.1)]
+head(table_normalised)
+
+
+
+##normalise the individual position counts based on the gene median values
+
+final_10107<-table_normalised$X10107/table_normalised$median_10107
+final_10207<-table_normalised$X10207/table_normalised$median_10207
+
+
+##calculate the log ratio at each position
+
+log_ratio<-log2(final_10107/final_10207)
+final<-cbind(table_normalised,log_ratio)
+
+#find the minimum / maxiumum cleavage value for each gene. 
+
+min_cleavage<-aggregate(x = final$log_ratio,                # Specify data column
+                        by = list(final$Gene),              # Specify group indicator
+                        FUN = min) 
+
+
+max_cleavage<-aggregate(x = final$log_ratio,                # Specify data column
+                        by = list(final$Gene),              # Specify group indicator
+                        FUN = max) 
+
+
+
+##how many genes are cleaved (i.e <= -1 log ratio)
+length(which(min_cleavage$x<=-1))
+length(which(max_cleavage$x>=1))
+#how many total genes are present in the dataset
+length(unique(final$Gene))
+
+
+

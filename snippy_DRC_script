@@ -1,4 +1,4 @@
-### Based on Hounmanou et al. 2023 , we want to assign whether "our" DRC genomes are from AFR10d or AFR10e
+### Based on Hounmanou et al. 2023 (doi: 10.3201/eid2901.220641.)  , we want to assign whether "our" DRC genomes are from AFR10d or AFR10e
  
 ### The article  lacked some information about their results as they did not indicate in which groups the strains they used were assigned to 
 ###To still get the info we needed, I used the 96 new strains they shared in the paper. I used these 96 strains because in the table they showed in the paper, they write that 6 of them belong to the  AFR10d clade and 90 of them belong to AFR10e clade.

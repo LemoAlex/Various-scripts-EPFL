@@ -1,0 +1,134 @@
+### Based on Hounmanou et al. 2023 , we want to assign whether "our" DRC genomes are from AFR10d or AFR10e
+ 
+### The article  lacked some information about their results as they did not indicate in which groups the strains they used were assigned to 
+###To still get the info we needed, I used the 96 new strains they shared in the paper. I used these 96 strains because in the table they showed in the paper, they write that 6 of them belong to the  AFR10d clade and 90 of them belong to AFR10e clade.
+
+
+### First, find the sequences files from ENA database :
+
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR661/005/ERR6612635/ERR6612635_2.fastq.gz
+
+###iterate for each of these sequences 
+ERR6612639
+ERR6612635
+ERR6609864
+ERR6612636
+ERR6612637
+ERR6612638
+ERR6609035
+ERR6609036
+ERR6612641
+ERR6612644
+ERR6612643
+ERR6612640
+ERR6613991
+ERR6613985
+ERR6613987
+ERR6614159
+ERR6609863
+ERR6613990
+ERR6609858
+ERR6609857
+ERR6613989
+ERR6609859
+ERR6609861
+ERR6609862
+ERR6609856
+ERR6613992
+ERR6613993
+ERR6613994
+ERR6614158
+ERR6613988
+ERR6612642
+ERR6613986
+ERR6609860
+ERR3980552
+ERR3980557
+ERR3980561
+ERR3980556
+ERR3980554
+ERR3980553
+ERR3980559
+ERR3980560
+ERR3980558
+ERR3980555
+ERR6614190
+ERR6614164
+ERR6614163
+ERR6614196
+ERR6614166
+ERR6614193
+ERR6614161
+ERR6614167
+ERR6614160
+ERR6614194
+ERR6614197
+ERR6614195
+ERR6614165
+ERR6614563
+ERR6614198
+ERR6614564
+ERR6614199
+ERR6614562
+ERR6614565
+ERR6614567
+ERR6614566
+ERR6614162
+ERR6614192
+ERR6614191
+ERR6614597
+ERR6614594
+ERR6614576
+ERR6614595
+ERR6614593
+ERR6614608
+ERR6614605
+ERR6614592
+ERR6614596
+ERR6614606
+ERR6614609
+ERR6614607
+ERR6614569
+ERR6614598
+ERR6614580
+ERR6614581
+ERR6614583
+ERR6614570
+ERR6614585
+ERR6614579
+ERR6614600
+ERR6614599
+ERR6614578
+ERR6614571
+ERR6614601
+ERR6614582
+ERR6614577
+ERR6614568
+ERR6614584
+
+
+### Then, we use snippy and gubbins to call SNPs and perform phylogeny for each sequence. We use N16961 as reference.
+
+snippy  -mincov 4 -ref  N16961.gb -R1 ERR6612639_1.fastq.gz -R2 ERR6612639_2.fastq.gz -o  snippy_ERR6612639
+
+### With our sequence, we use genome, not reads, so we use the contig options :
+
+snippy --outdir snippy_DRC072 --ref N16961.gb --ctgs DRC072.fa -mincov 4
+
+### The, snippy-core for the alignment
+
+snippy-core -ref N16961.gb snippy_*
+
+
+### Now with use Gubbins/ RaxML based on the snippy alignment :
+
+python3 run_gubbins.py core.full.aln --bootstrap 100
+
+
+##And we have the tree!
+
+
+
+
+
+

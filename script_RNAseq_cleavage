@@ -1,7 +1,7 @@
 
 #### FINAL script for RNASeq.####
 
-#The goal here is to analye the RNA dataseq with the method used in Culviner et al (2018). We want to check whether there is some putative cleavage when a nuclease is present #compared to when absent. 
+#The goal here is to analye the RNA dataseq with the method used in Culviner et al (2018, DOI: 10.1016/j.molcel.2018.04.026). We want to check whether there is some putative cleavage when a nuclease is present #compared to when absent. 
 
 #We have 3 'samples', with each having 3 replicates
 

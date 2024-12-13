@@ -1,0 +1,50 @@
+####SCRIPT TO Perform a MAcsyfinder analysis. The aim is to understand where a multi-gene system is found accross a database. Here, we use a bacterial database coming from completely assembled and curated genomes (Refseq database).
+
+## We conduct this pipeline in several steps
+## 1) create the protein profiles and gather their homologs
+## 2) create macsyfinder model
+## 3) get the presence / absence of gene models using macsfinder
+## 4) process the data
+
+
+1. 
+Psi blast the protein sequences (*.faa) on NCBI website : https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastSearch&PROGRAM=blastp&BLAST_PROGRAMS=psiBlast
+We do 3 iteration,threshold for psi blast 1e-10
+
+2. Download FASTA from NCBI
+
+3. Align using mafft (https://github.com/GSLBiotech/mafft)
+
+#quick and not very precise
+> mafft --auto input.fasta > output.aln
+
+#accurate alignment
+> mafft --maxiterate 1000 --localpair input.faa > output_precise.aln
+
+4. Macsyfinder (https://github.com/gem-pasteur/macsyfinder) Note we also need mamba/conda and HMMER (https://github.com/EddyRivasLab/hmmer), but HMMER is included in the mamba repository of macsyfinder.
+
+#load environment and create the protein profile with hmmer
+
+> conda activate macsyfinder-env
+> hmmbuild output.hmm output.aln
+
+#copy and paste the .hmm files in the model/profiles folder, and change the gene name in the mode_example (remove .hmm extension)
+
+#run  macsyfinder
+> macsyfinder --models MODE_NAME --sequence-db DATABASE_SEQ.faa --db-type ordered_replicon --models-dir PATH/proteins/models -w 0 
+
+
+### Utility script to get the species name list from the macsyfinder output
+
+> cut -f 3 all_best_solutions.tsv > headers_raw
+> sed '/^$'/d headers_raw  > headers_format
+> tail -n +6 headers_format > headers_clean 
+> grep -f headers_clean ../bacteria_headers.txt > headers_species
+> grep -A 1 -f headers_clean DATABASE_SEQ.faa > final_species_seqs.faa #to also get the sequences
+> awk '{ print; } NR % 1 == 0 { print ""; }' headers_species >final_species #to get only the species
+> rm headers_*
+
+
+
+
+

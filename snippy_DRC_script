@@ -6,7 +6,7 @@
 
 ### First, find the sequences files from ENA database :
 
-wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR661/005/ERR6612635/ERR6612635_2.fastq.gz
+> wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR661/005/ERR6612635/ERR6612635_2.fastq.gz
 
 ###iterate for each of these sequences 
 ERR6612639
@@ -109,20 +109,20 @@ ERR6614584
 
 ### Then, we use snippy and gubbins to call SNPs and perform phylogeny for each sequence. We use N16961 as reference.
 
-snippy  -mincov 4 -ref  N16961.gb -R1 ERR6612639_1.fastq.gz -R2 ERR6612639_2.fastq.gz -o  snippy_ERR6612639
+> snippy  -mincov 4 -ref  N16961.gb -R1 ERR6612639_1.fastq.gz -R2 ERR6612639_2.fastq.gz -o  snippy_ERR6612639
 
 ### With our sequence, we use genome, not reads, so we use the contig options :
 
-snippy --outdir snippy_DRC072 --ref N16961.gb --ctgs DRC072.fa -mincov 4
+> snippy --outdir snippy_DRC072 --ref N16961.gb --ctgs DRC072.fa -mincov 4
 
 ### The, snippy-core for the alignment
 
-snippy-core -ref N16961.gb snippy_*
+> snippy-core -ref N16961.gb snippy_*
 
 
 ### Now with use Gubbins/ RaxML based on the snippy alignment :
 
-python3 run_gubbins.py core.full.aln --bootstrap 100
+> python3 run_gubbins.py core.full.aln --bootstrap 100
 
 
 ##And we have the tree!

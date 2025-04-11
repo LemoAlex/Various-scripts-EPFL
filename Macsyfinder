@@ -39,8 +39,12 @@ We do 3 iteration,threshold for psi blast 1e-10
 > cut -f 3 all_best_solutions.tsv > headers_raw
 > sed '/^$'/d headers_raw  > headers_format
 > tail -n +6 headers_format > headers_clean 
-> grep -f headers_clean ../bacteria_headers.txt > headers_species
-> grep -A 1 -f headers_clean DATABASE_SEQ.faa > final_species_seqs.faa #to also get the sequences
+# > grep -f headers_clean ../bacteria_headers.txt > headers_species
+# > grep -A 1 -f headers_clean DATABASE_SEQ.faa > final_species_seqs.faa #to also get the sequences
+
+seqkit grep -f headers_clean DATABASE_SEQ.faa > final_species_seqs.faa
+grep '^>' final_species_seqs.faa > headers_final
+
 > awk '{ print; } NR % 1 == 0 { print ""; }' headers_species >final_species #to get only the species
 > rm headers_*
 
